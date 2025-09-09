@@ -1,0 +1,45 @@
+site_name: VCCL Documentation
+theme: 
+  name: material
+  palette:
+    primary: blue
+    accent: light blue
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - 首页: index.md
+  - 版本信息: version.md
+  - 核心功能:
+    - 功能概述: features/overview.md
+    - 拓扑感知负载均衡: features/topology-aware.md
+    - PCIe异构与智能RNIC选择: features/pcie-heterogeneity.md
+    - 流可视化: features/flow-telemetry.md
+    - 容错机制: features/fault-tolerance.md
+    - SM Free & Overlap: features/sm-free-overlap.md
+  - 使用指南:
+    - 下载与编译: usage/installation.md
+    - NCCL 测试: usage/nccl-tests.md
+    - 端到端训练: usage/training.md
+  - 环境变量参考: environment-variables.md
