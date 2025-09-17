@@ -29,17 +29,16 @@ markdown_extensions:
       permalink: true
 
 nav:
-  - 首页: index.md
-  - 版本信息: version.md
-  - 核心功能:
-    - 功能概述: features/overview.md
-    - 拓扑感知负载均衡: features/topology-aware.md
-    - PCIe异构与智能RNIC选择: features/pcie-heterogeneity.md
-    - 流可视化: features/flow-telemetry.md
-    - 容错机制: features/fault-tolerance.md
-    - SM Free & Overlap: features/sm-free-overlap.md
-  - 使用指南:
-    - 下载与编译: usage/installation.md
-    - NCCL 测试: usage/nccl-tests.md
-    - 端到端训练: usage/training.md
-  - 环境变量参考: environment-variables.md
+  - Home: index.md
+  - Version Information: version.md
+  - Core Features:
+    - Feature Overview: features/overview.md
+    - Topology-Aware Load Balancing: features/topology-aware.md
+    - PCIe Heterogeneity & Smart RNIC Selection: features/pcie-heterogeneity.md
+    - Flow Telemetry: features/flow-telemetry.md
+    - Fault Tolerance: features/fault-tolerance.md
+    - SM Free & Overlap Training: features/sm-free-overlap.md
+  - Usage Guide:
+    - Download and Build: usage/installation.md
+    - VCCL Tests: usage/nccl-tests.md
+  - Environment Variables Reference: environment-variables.md
