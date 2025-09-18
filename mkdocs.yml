@@ -32,7 +32,6 @@ nav:
   - Home: index.md
   - Version Information: version.md
   - Core Features:
-    - Feature Overview: features/overview.md
     - Topology-Aware Load Balancing: features/topology-aware.md
     - PCIe Heterogeneity & Smart RNIC Selection: features/pcie-heterogeneity.md
     - Flow Telemetry: features/flow-telemetry.md

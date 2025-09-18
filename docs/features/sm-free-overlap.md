@@ -33,62 +33,6 @@ GPU DMA ←→ [Communication Hardware] (Independent Path)
 Regression testing for training performance improvement using VCCL zerocopy.
 
 ### Preparation
-#### Required Modifications for Bond0 Clusters
-For clusters with bond0 configuration, VCCL needs to be modified to enable load balancing across two ports. Apply the following patch to VCCL:
-
-**Key Changes**:
-1. **Makefile**: Added `-lmlx5` library linking
-2. **net_ib.cc**: Added MLX5 QP modification functions for LAG port configuration
-
-```cpp
-diff --git a/src/Makefile b/src/Makefile
-index 65da630..e420eea 100644
---- a/src/Makefile
-+++ b/src/Makefile
-@@ -52,7 +52,7 @@ PKGTARGET  := $(PKGCONFIGFILE)
- LIBOBJ     := $(LIBSRCFILES:%.cc=$(OBJDIR)/%.o)
- BINOBJ     := $(BINSRCFILES:%.cc=$(OBJDIR)/%.o)
- DEPFILES   := $(LIBOBJ:%.o=%.d) $(BINOBJ:%.o=%.d)
--LDFLAGS    += -L${CUDA_LIB} -l$(CUDARTLIB) -lpthread -lrt -ldl
-+LDFLAGS    += -L${CUDA_LIB} -l$(CUDARTLIB) -lpthread -lrt -ldl -lmlx5
- INCPLUGIN  := include/plugin
- 
- DEVMANIFEST := $(BUILDDIR)/obj/device/manifest
-diff --git a/src/transport/net_ib.cc b/src/transport/net_ib.cc
-index 0540e1e..9892742 100644
---- a/src/transport/net_ib.cc
-+++ b/src/transport/net_ib.cc
-@@ -27,7 +27,11 @@
- #include "ibvwrap.h"
- #define NET_IB_CC
- #include "timer_log.h"
-+extern "C"
-+{
-+  int mlx5dv_modify_qp_udp_sport(struct ibv_qp *qp, uint32_t udp_sport);
-+  int mlx5dv_modify_qp_lag_port(struct ibv_qp *qp, uint8_t port_num);
-+}
- #define MAXNAMESIZE 64
- static char ncclIbIfName[MAX_IF_NAME_SIZE+1];
- static union ncclSocketAddress ncclIbIfAddr;
-@@ -1661,7 +1665,7 @@ ib_connect:
-     }
-   }
-   comm->base.nRemDevs = remMeta.ndevs;
-+  static int channel_loop = 0;
-   for (int q = 0; q < comm->base.nqps; q++) {
-     struct ncclIbQpInfo* remQpInfo   = remMeta.qpInfo + q;
-     struct ncclIbDevInfo* remDevInfo = remMeta.devs + remQpInfo->devIndex;
-@@ -1686,7 +1690,20 @@ ib_connect:
-     remDevInfo->mtu = std::min(remDevInfo->mtu, ibDev->portAttr.active_mtu);
-     NCCLCHECKGOTO(ncclIbRtrQp(qp, &commDev->base.gidInfo, remQpInfo->qpn, remDevInfo, false, remMeta.tc, remMeta.sl), ret, fail);
-     NCCLCHECKGOTO(ncclIbRtsQp(qp), ret, fail);
-+    mlx5dv_modify_qp_lag_port(qp, channel_loop % 2 + 1);
-+    channel_loop++;
-    memcpy(&comm->base.qps[q].gidInfo, &commDev->base.gidInfo, sizeof(struct ncclIbGidInfo));
-    comm->base.qps[q].dest_qp_num = remQpInfo->qpn;
-    memcpy(&comm->base.qps[q].info, remDevInfo, sizeof(struct ncclIbDevInfo));
-```
-
 **Patch Explanation**: 
 We have added support for batched isend/irecv operations in Megatron training to ensure that pipeline parallel (PP) communication does not leave any rank stuck in a pending communication state.
 
