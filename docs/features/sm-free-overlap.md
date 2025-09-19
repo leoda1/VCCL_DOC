@@ -84,6 +84,8 @@ OUTPUT_ARGS="
 "
 ```
 
+We use `--num-layers-per-virtual-pipeline-stage` to ensure 1F1B interleaving, and set `--timing-log-level 0` to avoid excessive cudaDeviceSynchronize-style hard synchronizations.
+
 #### Parallelism Configuration
 Set training parameters appropriately to ensure PP communication groups span across machines:
 - For server counts that are multiples of 4, set TP=2 and PP=4
@@ -100,6 +102,161 @@ Enable the following environment variables in MPI scripts for improved training 
 # If only using kernel-free mode, NCCL_PSM_FORCE_ZEROCOPY is not required
 -x NCCL_PSM_FORCE_ZEROCOPY=1 \
 -x NCCL_ENABLE_FAULT_TOLERANCE=0 \
+```
+
+#### Example shell
+For SM-free training, the required changes to `mpi.sh` are shown below; for Megatron-side modifications, please refer to [sm-free-overlap-training](https://vccl-doc.readthedocs.io/en/latest/features/sm-free-overlap/).
+##### mpi.sh
+```shell
+#! /bin/bash
+
+TIMESTAMP=$(date +'%Y.%m.%d-%H:%M:%S')
+
+NET_DEVICE="bond0"
+MLP_GPU=8
+MLP_MPI_HOSTFILE=$2
+MLP_WORKER_0_PORT=29500
+MLP_WORKER_NUM=$3
+
+source $1
+
+mkdir -p logs/${EXP_NAME}
+
+mpirun -np $((MLP_WORKER_NUM * MLP_GPU)) \
+        --hostfile ${MLP_MPI_HOSTFILE} \
+        --allow-run-as-root   \
+        --output-filename logs/${TIMESTAMP} \
+        --mca oob_tcp_if_include ${NET_DEVICE} \
+        -x NCCL_DEBUG=Version \
+        -x PATH \
+        -x MASTER_ADDR=$(cat $MLP_MPI_HOSTFILE | head -n 1 | sed -s 's/slots=8//g') \
+        -x MASTER_PORT=${MLP_WORKER_0_PORT} \
+        -x GLOO_SOCKET_IFNAME=${NET_DEVICE} \
+        -x NCCL_SOCKET_IFNAME=${NET_DEVICE} \
+        -x LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/inspire/hdd/global_user/liuda/vccl/build/lib \
+        -x NCCL_IB_HCA="mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1" \
+        -x NCCL_IB_TIMEOUT=25 \
+        -x NCCL_IB_RETRY_CNT=255 \
+        -x NCCL_IB_QPS_PER_CONNECTION=8 \
+        -x NCCL_ENABLE_FAULT_TOLERANCE=0 \
+        -x UCX_NET_DEVICES=bond0 \
+        -x NCCL_CUMEM_ENABLE=1 \
+        -x NCCL_IB_PCI_RELAXED_ORDERING=1 \
+        -x UCX_TLS=tcp,self \
+        -x NCCL_IB_TC=186 \
+        -x NCCL_NET_GDR_LEVEL=1 \
+        -x NCCL_PASS_SM=1 \
+        -x NCCL_IB_GID_INDEX=3 \
+        -x NCCL_NVLS_ENABLE=0 \
+        -x CUDA_DEVICE_MAX_CONNECTIONS=1 \
+        -x NCCL_PXN_DISABLE=1 \
+        -x NCCL_PSM_FORCE_ZEROCOPY=1 \
+        python   ${script_path} ${gpt_options}    2>&1 | tee logs/${EXP_NAME}/output_${TIMESTAMP}.log
+```
+
+##### model-314b.sh
+```shell
+#!/bin/bash
+VOCAB_FILE=./train-data/data/gpt2-vocab.json
+MERGE_FILE=./train-data/data/gpt2-merges.txt
+DATA_PATH=./train-data/data/CodeData-gpt2_text_document
+
+EXP_NAME="314B"
+
+MICRO_BATCH_SIZE=1
+GLOBAL_BATCH_SIZE=$((MLP_WORKER_NUM * 8 * 8))
+
+TP_SIZE=8
+PP_SIZE=8
+
+NHIDDEN=16384
+NLAYERS=95
+NHEADS=128
+SEQ_LEN=4096
+
+SAVE_INTERVAL=10000
+script_path="pretrain_gpt.py"
+TARGET_VOCAB=131072
+
+OPTIMIZER_ARGS="
+    --optimizer adam \
+    --adam-beta1 0.9 \
+    --adam-beta2 0.95 \
+    --adam-eps 1e-8 \
+    --lr 1.5e-4 \
+    --min-lr 1.0e-5 \
+    --lr-decay-style cosine \
+    --train-iters 10000
+    --lr-decay-iters  9000 \
+    --lr-warmup-fraction  .01  \
+    --clip-grad 1.0 \
+    --weight-decay 1e-2 \
+    --hidden-dropout 0.0 \
+    --attention-dropout 0.0 \
+    --initial-loss-scale 65536 \
+"
+
+MODEL_ARGS="
+    --bf16 \
+    --num-layers $NLAYERS \
+    --hidden-size $NHIDDEN \
+    --seq-length $SEQ_LEN \
+    --tokenizer-type GPT2BPETokenizer \
+    --max-position-embeddings $SEQ_LEN \
+    --num-attention-heads $NHEADS \
+    --disable-bias-linear \
+    --swiglu \
+    --use-flash-attn \
+    --transformer-impl transformer_engine \
+    --untie-embeddings-and-output-weights \
+    --position-embedding-type rope \
+    --no-position-embedding \
+    --normalization RMSNorm \
+    --use-mcore-models \
+    --manual-gc \
+    --sequence-parallel \
+"
+
+TRAINING_ARGS="
+    --micro-batch-size $MICRO_BATCH_SIZE \
+    --global-batch-size $GLOBAL_BATCH_SIZE \
+    --tensor-model-parallel-size $TP_SIZE \
+    --pipeline-model-parallel-size $PP_SIZE \
+    --use-distributed-optimizer \
+    --recompute-granularity selective \
+    --batch-p2p-communication \
+    --account-for-loss-in-pipeline-split \
+    --num-layers-per-virtual-pipeline-stage 4 \
+    --make-vocab-size-divisible-by $((TARGET_VOCAB / TP_SIZE)) \
+"
+    # --account-for-embedding-in-pipeline-split \
+
+DATA_ARGS="
+    --data-path $DATA_PATH \
+    --vocab-file $VOCAB_FILE \
+    --merge-file $MERGE_FILE \
+    --split 949,50,1 \
+"
+
+OUTPUT_ARGS="
+    --log-interval 1 \
+    --eval-iters 10 \
+    --eval-interval 1000 \
+    --save-interval $SAVE_INTERVAL \
+    --log-throughput \
+    --timing-log-level 0  \
+    --log-timers-to-tensorboard \
+    --log-memory-to-tensorboard \
+"
+gpt_options="
+    $MODEL_ARGS \
+    $TRAINING_ARGS \
+    $OPTIMIZER_ARGS \
+    $DATA_ARGS \
+    $OUTPUT_ARGS \
+    --distributed-timeout-minutes 60 \
+    --init-method-std 0.01 \
+"
 ```
 
 ### Performance Benefits

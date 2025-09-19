@@ -47,11 +47,13 @@ VCCL extends NCCL with the following additional environment variables:
 ## Usage Examples
 
 ### SM Free Training Configuration
+
 ```bash
 # Optimized for SM-free training workloads
 export NCCL_PASS_SM=1
-export NCCL_PSM_FORCE_ZEROCOPY=1
 export NCCL_PXN_DISABLE=1
+export NCCL_PSM_FORCE_ZEROCOPY=1
+export NCCL_IB_HCA=="mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx6_3:1,mlx5_7:1"
 export NCCL_ENABLE_FAULT_TOLERANCE=0
 ```
 
@@ -59,7 +61,7 @@ export NCCL_ENABLE_FAULT_TOLERANCE=0
 ```bash
 # Enable fault tolerance for production (without SM-free)
 export NCCL_ENABLE_FAULT_TOLERANCE=1
-export NCCL_IB_HCA=mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx6_3:1,mlx5_7:1,
+export NCCL_IB_HCA=="mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx6_3:1,mlx5_7:1"
 export NCCL_RETRY_COUNT=7
 export NCCL_TIMEOUT=18
 ```
