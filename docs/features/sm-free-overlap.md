@@ -104,8 +104,7 @@ Enable the following environment variables in MPI scripts for improved training 
 -x NCCL_ENABLE_FAULT_TOLERANCE=0 \
 ```
 
-#### Example shell
-For SM-free training, the required changes to `mpi.sh` are shown below; for Megatron-side modifications, please refer to [sm-free-overlap-training](https://vccl-doc.readthedocs.io/en/latest/features/sm-free-overlap/).
+#### Example training shell
 ##### mpi.sh
 ```shell
 #! /bin/bash
