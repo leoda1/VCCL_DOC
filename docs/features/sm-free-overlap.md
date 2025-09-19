@@ -50,6 +50,7 @@ git apply ./VCCL/asset/Megatron-change.patch
 ```
 
 ### Testing Configuration
+To obtain the SM-free zerocopy performance benefits, please configure and use the following environment variables step by step as shown below.
 
 #### Training Arguments
 Add `--batch-p2p-communication` option in the model configuration file to enable P2P batch functionality:
@@ -103,6 +104,7 @@ Enable the following environment variables in MPI scripts for improved training 
 -x NCCL_PSM_FORCE_ZEROCOPY=1 \
 -x NCCL_ENABLE_FAULT_TOLERANCE=0 \
 ```
+Please re-check that these variables are present in your `mpi.sh` (or MPI launch command). Missing or misconfigured values may disable SM-free zerocopy or reduce communication–computation overlap. You can refer to our Example training shell below to train the complete parameters of the 314B model on the cluster.
 
 #### Example training shell
 ##### mpi.sh

@@ -33,7 +33,7 @@ VCCL extends NCCL with the following additional environment variables:
 ### SM Free Training
 - **Requirement**: Must disable fault tolerance (`NCCL_ENABLE_FAULT_TOLERANCE=0`)
 - **Limitation**: Fault tolerance is not yet supported with SM-free training
-- **For SM-free training, the required changes to `mpi.sh` are shown below; for Megatron-side modifications, please refer to https://vccl-doc.readthedocs.io/en/latest/features/sm-free-overlap/.**
+- **For SM-free training, the required changes to `mpi.sh` are shown below; for Megatron-side modifications, please refer to [sm-free-overlap-tarining](https://vccl-doc.readthedocs.io/en/latest/features/sm-free-overlap/).**
 - **Required Settings**:
   - `NCCL_PASS_SM=1` (enable SM-free mode)
   - `NCCL_PSM_FORCE_ZEROCOPY=1` (force zero-copy)
