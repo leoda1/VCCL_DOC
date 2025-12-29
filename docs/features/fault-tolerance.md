@@ -34,10 +34,10 @@ export NCCL_IB_HCA=="mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_
 ### Advanced Configuration
 ```bash
 # Set retry count (default 7)
-export NCCL_RETRY_COUNT=7
+export NCCL_IB_RETRY_COUNT=7
 
 # Set timeout in seconds (default 18)
-export NCCL_TIMEOUT=18
+export NCCL_IB_TIMEOUT=18
 ```
 
 
