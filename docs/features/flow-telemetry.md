@@ -23,3 +23,7 @@ export TELEMETRY_WINDOWSIZE=100
 export NCCL_TELEMETRY_LOG_PATH=/tmp/vccl_telemetry
 ```
 
+## Changelog
+2026.1.8 [https://github.com/sii-research/VCCL/pull/21](https://github.com/sii-research/VCCL/pull/21)
+
+This PR introduces a new environment variable NCCL_TELEMETRY_OBSERVE to differentiate between troubleshooting mode (value 0, default) and monitoring mode (value 1). The primary goal is to make the global timer log lock-free to prevent performance degradation in the NCCL proxy critical path.
