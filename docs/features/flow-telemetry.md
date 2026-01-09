@@ -17,7 +17,12 @@ VCCL Flow Telemetry provides microsecond-level GPU-to-GPU point-to-point traffic
 export NCCL_TELEMETRY_ENABLE=1
 
 # Set data window size (default: 50)
-export TELEMETRY_WINDOWSIZE=100
+export NCCL_TELEMETRY_WINDOWSIZE=100
+
+# Provide two modes (default: 0): 
+# 0 for trouble shooting, only print logs when detect performance degradation
+# 1 for O(us) monitoring
+export NCCL_TELEMETRY_OBSERVE=
 
 # Set log output path
 export NCCL_TELEMETRY_LOG_PATH=/tmp/vccl_telemetry
