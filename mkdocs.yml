@@ -36,7 +36,8 @@ nav:
     - PCIe Heterogeneity & Smart RNIC Selection: features/pcie-heterogeneity.md
     - Flow Telemetry: features/flow-telemetry.md
     - Fault Tolerance: features/fault-tolerance.md
-    - SM Free & Overlap Training: features/sm-free-overlap.md
+    - SM Free P2P & Overlap Training: features/sm-free-overlap.md
+    - SM Free Alltoallv & Overlap Training: features/vccl_v2_setup_guide.md
   - Usage Guide:
     - Download and Build: usage/installation.md
     - VCCL Tests: usage/nccl-tests.md

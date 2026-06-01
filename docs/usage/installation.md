@@ -34,6 +34,18 @@ cd VCCL
 cat README.md
 ```
 
+!!! warning "Version Notice"
+    Different features require different VCCL versions. After cloning, checkout the appropriate tag before building:
+
+    - **SM-Free AlltoAllv** and **SM-Free P2P** (overlap training): use tag **`v2.0.0`**
+      ```bash
+      git checkout v2.0.0
+      ```
+    - **Fault Tolerance** and **Flow Telemetry**: use tag **`v0.3.1`**
+      ```bash
+      git checkout v0.3.1
+      ```
+
 ## Build VCCL Examples
 
 ### Hopper Architecture (H100/H200)
