@@ -1,10 +1,10 @@
 # VCCL v2 Installation and Setup Guide
 
-# Overview
+## Overview
 
-VCCL v2 introduces VCCL Manager, a runtime component that enables Megatron\-LM to invoke VCCL AlltoAllv directly through the nccl4py interface\.
+VCCL v2 introduces VCCL Manager, a runtime component that enables Megatron-LM to invoke VCCL AlltoAllv directly through the nccl4py interface.
 
-To simplify integration, we provide a Megatron patch implementing all core VCCL Manager functionalities\. Applying this patch allows Megatron\-LM to seamlessly leverage VCCL AlltoAllv for accelerated MoE training\.
+To simplify integration, we provide a Megatron patch implementing all core VCCL Manager functionalities. Applying this patch allows Megatron-LM to seamlessly leverage VCCL AlltoAllv for accelerated MoE training.
 
 In addition to the patch, users must install and configure:
 
@@ -12,29 +12,27 @@ In addition to the patch, users must install and configure:
 
 - nccl4py
 
-- Transformer Engine \(TE\) 2\.8\.0
+- Transformer Engine (TE) 2.8.0
 
-> **Note:** Currently, only Transformer Engine 2\.8\.0 is officially supported\.
-> 
-> 
+> **Note:** Currently, only Transformer Engine 2.8.0 is officially supported.
 
 ---
 
-# Prerequisites
+## Prerequisites
 
 Before configuring VCCL Manager, install and build VCCL according to the official documentation:
 
 VCCL Installation Guide:
 
-[https://vccl\-doc\.readthedocs\.io/en/latest/usage/installation/](https://vccl-doc.readthedocs.io/en/latest/usage/installation/)
+[https://vccl-doc.readthedocs.io/en/latest/usage/installation/](https://vccl-doc.readthedocs.io/en/latest/usage/installation/)
 
 ---
 
-## Megatron\-LM Integration
+## Megatron-LM Integration
 
-Clone the supported Megatron\-LM version and apply the VCCL Manager patch\.
+Clone the supported Megatron-LM version and apply the VCCL Manager patch.
 
-```Plain Text
+```bash
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 
@@ -50,9 +48,9 @@ nvcc -Xcompiler -fPIC -shared -std=c++17 -o libvccl_arena_allocator.so vccl_aren
 
 ## nccl4py Setup
 
-Ensure VCCL has been successfully compiled before building nccl4py\.
+Ensure VCCL has been successfully compiled before building nccl4py.
 
-```Plain Text
+```bash
 cd path_to_VCCL/nccl4py
 
 export CUDA_HOME=/usr/local/cuda
@@ -64,11 +62,11 @@ python setup.py build_ext --inplace
 
 ## Transformer Engine Configuration
 
-VCCL Manager currently relies on a customized implementation of `_GroupedLinear` in Transformer Engine\.
+VCCL Manager currently relies on a customized implementation of `_GroupedLinear` in Transformer Engine.
 
-Replace the default implementation with the VCCL\-compatible version:
+Replace the default implementation with the VCCL-compatible version:
 
-```Plain Text
+```bash
 cd /usr/local/lib/python3.12/dist-packages/transformer_engine/pytorch/module
 
 cp path_to_Megatron-LM/te/grouped_linear.py grouped_linear.py
@@ -76,71 +74,67 @@ cp path_to_Megatron-LM/te/grouped_linear.py grouped_linear.py
 rm /usr/local/lib/python3.12/dist-packages/transformer_engine/pytorch/__pycache__/*
 ```
 
-If Transformer Engine is installed in a different location, adjust the path accordingly\.
+If Transformer Engine is installed in a different location, adjust the path accordingly.
 
 ---
 
-# Training Configuration
+## Training Configuration
 
-To enable AlltoAllv acceleration for MoE training, add the following Megatron options\.
+To enable AlltoAllv acceleration for MoE training, add the following Megatron options.
 
 ### Enable MoE Dual Pipeline
 
-```Plain Text
+```text
 --overlap-moe-expert-parallel-comm
 ```
 
 ### Enable VCCL AlltoAllv Dispatcher
 
-```Plain Text
+```text
 --moe-token-dispatcher-type alltoallv
 ```
 
 ### Enable Grouped GEMM
 
-```Plain Text
+```text
 --moe-grouped-gemm
 ```
 
-> **Note:** The current activation and gradient interception mechanism depends on Transformer Engine's `_GroupedLinear` implementation\. Support for additional execution paths will be added in future releases\.
-> 
-> 
+> **Note:** The current activation and gradient interception mechanism depends on Transformer Engine's `_GroupedLinear` implementation. Support for additional execution paths will be added in future releases.
 
 ---
 
-# Environment Variables
+## Environment Variables
 
-Configure the following environment variables before launching training\.
+Configure the following environment variables before launching training.
 
 ### Load VCCL v2 Runtime
 
-```Plain Text
+```bash
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:path_to_VCCL/build/lib
 ```
 
 ### Enable nccl4py
 
-```Plain Text
+```bash
 export PYTHONPATH="${PYTHONPATH}:path_to_VCCL/nccl4py"
 ```
 
 ### Enable MoE Dual Pipeline Scheduling
 
-```Plain Text
+```bash
 export CUDA_DEVICE_MAX_CONNECTIONS=32
 ```
 
-> **Important:** `CUDA_DEVICE_MAX_CONNECTIONS=32` is required for Megatron\-LM to correctly schedule the MoE dual pipeline execution\.
-> 
-> 
+> **Important:** `CUDA_DEVICE_MAX_CONNECTIONS=32` is required for Megatron-LM to correctly schedule the MoE dual pipeline execution.
 
 ---
 
-# Example Launch Scripts
+## Example Launch Scripts
 
-mpi\.sh
+mpi.sh
 
-```Bash
+```bash
 #! /bin/bash
 
 NET_DEVICE="bond0"
@@ -175,9 +169,9 @@ mpirun -np $((MLP_WORKER_NUM * MLP_GPU)) \
         script/nsys.sh python ${script_path} ${gpt_options}
 ```
 
-mixtral\_8x7b\.sh
+mixtral_8x7b.sh
 
-```Bash
+```bash
 #!/bin/bash
 
 EXP_NAME="moe-group"
@@ -270,6 +264,3 @@ gpt_options="
     ${LOGGING_ARGS} \
 "
 ```
-
-
-
